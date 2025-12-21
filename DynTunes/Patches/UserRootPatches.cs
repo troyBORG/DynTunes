@@ -12,26 +12,44 @@ namespace DynTunes.Patches;
 [SuppressMessage("ReSharper", "VariableCanBeNotNullable")]
 public class UserRootPatches
 {
-    private static bool WriteOrAttachDynVar<T>(DynamicVariableSpace space, string name, T value)
+    private static Slot GetOrCreateDynTunesSlot(Slot userRootSlot)
     {
-        DynamicVariableWriteResult result = space.TryWriteValue(name, value);
-        if (result == DynamicVariableWriteResult.NotFound)
+        string slotName = DynTunes.SlotName;
+        Slot? dynTunesSlot = userRootSlot.FindChild(s => s.Name == slotName);
+        if (dynTunesSlot == null)
         {
-            AttachDynVar<T>(space, name);
-            result = space.TryWriteValue(name, value);
+            dynTunesSlot = userRootSlot.AddSlot(slotName);
         }
-
-        return result == DynamicVariableWriteResult.Success;
+        return dynTunesSlot;
     }
 
-    private static void AttachDynVar<T>(IComponent root, string name)
+    private static bool WriteOrAttachDynVar<T>(Slot userRootSlot, Slot dynTunesSlot, string name, T value)
     {
+        // Use the original KeySpace to create the variable name (e.g., "User/Music_Title")
         string varName = $"{DynTunes.KeySpace}/{name}";
-        DynamicValueVariable<T> variable = root.Slot.GetComponentOrAttach<DynamicValueVariable<T>>(x => x.VariableName.Value == varName);
-
-        variable.VariableName.Value = varName;
-        variable.Value.Value = default;
+        
+        // Ensure the variable component exists on the DynTunes slot with the original variable name
+        DynamicValueVariable<T> variable = dynTunesSlot.GetComponentOrAttach<DynamicValueVariable<T>>(x => x.VariableName.Value == varName);
+        
+        // Set the variable name if it's not already set
+        if (variable.VariableName.Value != varName)
+        {
+            variable.VariableName.Value = varName;
+        }
+        
+        // Update the variable value directly
+        variable.Value.Value = value;
+        
+        // Also try to write to the space for compatibility
+        DynamicVariableSpace? space = userRootSlot.FindSpace(DynTunes.KeySpace);
+        if (space != null)
+        {
+            space.TryWriteValue(varName, value);
+        }
+        
+        return true;
     }
+
 			
     [HarmonyPatch("OnCommonUpdate")]
     [HarmonyPostfix]
@@ -39,20 +57,19 @@ public class UserRootPatches
     {
         if (__instance == null || __instance.ActiveUser != __instance.LocalUser || __instance.World.IsUserspace()) return;
 
-        DynamicVariableSpace? space = __instance.Slot.FindSpace(DynTunes.KeySpace);
-        if (space == null) return;
+        Slot dynTunesSlot = GetOrCreateDynTunesSlot(__instance.Slot);
         
         MediaPlayerState state = DynTunes.Connector.GetState();
 
         bool failed = false;
 
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.Title, state.Title);
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.Artist, state.Artist);
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.Album, state.Album);
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.AlbumArtUrl, state.AlbumArtUrl);
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.Playing, state.IsPlaying);
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.Position, state.PositionSeconds);
-        failed |= !WriteOrAttachDynVar(space, DynTunes.KeyPrefix + DynTunes.Length, state.LengthSeconds);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Title, state.Title);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Artist, state.Artist);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Album, state.Album);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.AlbumArtUrl, state.AlbumArtUrl);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Playing, state.IsPlaying);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Position, state.PositionSeconds);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Length, state.LengthSeconds);
 
         _ = failed; // Todo: warn
     }
