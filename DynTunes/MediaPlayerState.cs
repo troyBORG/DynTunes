@@ -9,4 +9,5 @@ public class MediaPlayerState
     public bool IsPlaying { get; set; }
     public float PositionSeconds { get; set; }
     public float LengthSeconds { get; set; }
+    public bool IsConnected { get; set; }
 }

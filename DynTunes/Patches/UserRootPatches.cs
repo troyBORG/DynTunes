@@ -70,6 +70,7 @@ public class UserRootPatches
         failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Playing, state.IsPlaying);
         failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Position, state.PositionSeconds);
         failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.Length, state.LengthSeconds);
+        failed |= !WriteOrAttachDynVar(__instance.Slot, dynTunesSlot, DynTunes.KeyPrefix + DynTunes.IsConnected, state.IsConnected);
 
         _ = failed; // Todo: warn
     }

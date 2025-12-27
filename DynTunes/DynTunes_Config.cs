@@ -58,6 +58,12 @@ public partial class DynTunes // Config
     private static readonly ModConfigurationKey<string> AlbumArtUrlInternal = new("AlbumArtUrl", AlbumArtUrlDescription, () => AlbumArtUrlDefault);
     internal static string AlbumArtUrl => Config?.GetValue(AlbumArtUrlInternal) ?? AlbumArtUrlDefault;
     
+    private const string IsConnectedDescription = "The name to use for the IsConnected boolean";
+    private const string IsConnectedDefault = "IsConnected";
+    [AutoRegisterConfigKey]
+    private static readonly ModConfigurationKey<string> IsConnectedInternal = new("IsConnected", IsConnectedDescription, () => IsConnectedDefault);
+    internal static string IsConnected => Config?.GetValue(IsConnectedInternal) ?? IsConnectedDefault;
+    
     private const string SlotNameDescription = "The name of the Slot to create in the UserRoot to store all DynTunes dynamic variables";
     private const string SlotNameDefault = "🎵 DynTunes";
     [AutoRegisterConfigKey]

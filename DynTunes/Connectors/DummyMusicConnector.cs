@@ -32,4 +32,9 @@ public class DummyMusicConnector : IMusicConnector
     {
         return this._state;
     }
+    
+    public void Reconnect()
+    {
+        // Dummy connector doesn't need to reconnect
+    }
 }
